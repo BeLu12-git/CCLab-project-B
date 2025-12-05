@@ -1,3 +1,5 @@
+//修改字体
+//添加BG2，BG3的声音，文字描述
 let robot, ghost;
 let noteIndex = 0;
 let notes = [
@@ -34,14 +36,22 @@ let fade = 255;
 let world;
 let testMode = false; 
 let testStartTime = 0; 
-let testDuration = 6000; 
+let testDuration = 20000; 
 let mouseIsMoving = false; 
 let lastMouseMoveTime = 0; 
 let ghostVX = 0;
 let ghostVY = 0;
 let robotVX = 0;
 let robotVY = 0;
-let currentBG = 1; // 1=background1, 2=background2, 3=background3
+let currentBG = 1;
+let showTextSound = false;
+let showTextBG1 = false;
+let textStartTime = 0;// 1=background1, 2=background2, 3=background3
+let DISTANCE_THRESHOLD = 5;
+let leftColor;
+let rightColor;
+let finalTint = 0.5;
+let tintColor;
 
 function preload() {
   img1 = loadImage("background1.png");
@@ -54,6 +64,11 @@ function setup() {
   let canvas = createCanvas(windowWidth, windowHeight);
   canvas.id("p5-canvas");
   canvas.parent("p5-canvas-container");
+  
+  textAlign(CENTER, CENTER);
+  textSize(32);
+  fill(255);
+  noStroke();
 
   osc = new p5.Oscillator("square");
   osc.freq(880);
@@ -67,6 +82,11 @@ function setup() {
   testMode = false;
   mouseIsMoving = false;
   lastMouseMoveTime = millis();
+
+  leftColor = color(255,0,0);
+  rightColor = color(0,0,255);
+  finalTint = 0.5;
+  tintColor = lerpColor(leftColor, rightColor, finalTint); // 这里才安全
 }
 
 function draw() {
@@ -107,28 +127,38 @@ function draw() {
   }
 
 
-  //BG1: angrymode and happymode
-  if (testMode === false && currentBG === 1 && robot.y > height / 2 + 300 && robot.x > width / 2 - 400 && robot.x < width/2 - 100) {
+  //BG1: angrymode and happymode and sound reminder
+  if (testMode === false && currentBG === 1 && ghost.y > height * 0.2 &&ghost.y < height * 0.3 && ghost.x > width *0.7 && ghost.x < width * 0.8) {
     robotAngry = true;
     robotHappy = false;
-    robotEverAngry = true; 
-    osc.freq(1200);
-    osc.amp(0.4, 0.1);
+    robotEverAngry = true;
+    showTextSound = true; 
+    osc.freq(1400,0.02);
+    osc.amp(0.6,0.02);
     setTimeout(() => {
-      osc.amp(0, 0.5);
-    }, 500);
-  }else if (testMode === false && currentBG === 1 && robot.y > height / 2 - 200 && robot.y < height/2 + 100 && robot.x > width/2 - 400 && robot.x < width/2 - 100) {
+      osc.amp(0, 0.2);
+    }, 180);
+  }else if (testMode === false && currentBG === 1 && ghost.y > height * 0.35 && ghost.y < height * 0.45 && ghost.x > width * 0.7 && ghost.x < width * 0.8) {
     robotHappy = true;
     robotAngry = false;
-    osc.freq(1200);
-    osc.amp(0.4, 0.1);
+    showTextSound = true;
+    osc.freq(900);
+    osc.amp(0.35, 0.1);
     setTimeout(() => {
-      osc.amp(0, 0.5);
-    }, 500);
+      osc.freq(1000, 0.15);
+      osc.amp(0.0, 0.3);  
+    }, 180);
+  } else if(testMode === false && currentBG === 1 && ghost.y > height * 0.45 && ghost.y < height * 0.55 && ghost.x > width * 0.7 && ghost.x < width * 0.8 ) {
+    robotHappy = false;
+    robotHappy = false;
+    showTextSound = true;
+    showTextSound = true;
+    textStartTime = millis();
   } else if (testMode === false && currentBG === 1) {
     if (robot.y < height / 2 + 100 && robot.x < width / 2 - 100) {
       robotAngry = false;
       robotHappy = false;
+      showTextSound = true;
     }
   }
 
@@ -149,33 +179,33 @@ function draw() {
     robotVX = random(-20, 20);
     robotVY = random(-20, 20);
 
-    if (abs(ghostVX) < 3) {
-  if (random() < 0.5) {
-    ghostVX = -3;
+    if (abs(ghostVX) < 10) {
+  if (random() < 10) {
+    ghostVX = -20;
   } else {
-    ghostVX = 3;
+    ghostVX = 20;
   }
 }
-    if (abs(ghostVY) < 3) {
-  if (random() < 0.5) {
-    ghostVY = -3;
+    if (abs(ghostVY) < 10) {
+  if (random() < 10) {
+    ghostVY = -20;
   } else {
-    ghostVY = 3;
+    ghostVY = 20;
   }
 }
-    if (abs(robotVX) < 3) {
-  if (random() < 0.5) {
-    robotVX = -3;
+    if (abs(robotVX) < 10) {
+  if (random() < 10) {
+    robotVX = -20;
   } else {
-    robotVX = 3;
+    robotVX = 20;
   }
 }
 
-    if (abs(robotVY) < 3) {
+    if (abs(robotVY) < 10) {
   if (random() < 0.5) {
-    robotVY = -3;
+    robotVY = -20;
   } else {
-    robotVY = 3;
+    robotVY = 20;
   }
 }
 
@@ -194,7 +224,6 @@ function draw() {
       ghost.y = height / 2;
       robot.x = width / 4;
       robot.y = height / 2;
-      osc.amp(0, 0.5);
     }
   }
 
@@ -215,8 +244,9 @@ function draw() {
 
   //在BG3中进行选择，回到BG1或BG4
   if (currentBG === 3) {
-    tint(255, 255);
+    tint(tintColor);
     image(img3, 0, 0, width, height);
+    noTint();
   } else if (currentBG === 2) {
     tint(255, 255);
     image(img2, 0, 0, width, height);
@@ -234,6 +264,23 @@ function draw() {
         fade--;
       }
     }
+  }
+
+  //tint changed based on mouse movement direction in BG3
+  if(currentBG === 3){
+    let angle = atan2(mouseY - pmouseY, mouseX - pmouseX);
+    let distance = dist(mouseX, mouseY, pmouseX, pmouseY);
+    let baseTint = 0.5;
+    if (distance > DISTANCE_THRESHOLD) {
+      let t = map(distance, DISTANCE_THRESHOLD, 50, 0, 1, true);
+      if (angle > radians(-45) && angle < radians(45)) {
+      finalTint = constrain(baseTint + t * 0.5, 0, 1);
+    }
+      else if (angle > radians(135) || angle < radians(-135)) {
+       finalTint = constrain(baseTint - t * 0.5, 0, 1);
+    }
+  } 
+  tintColor = lerpColor(leftColor, rightColor, finalTint);
   }
 
   //在BG2中，相互碰撞
@@ -294,23 +341,45 @@ function draw() {
   ghost.draw(world);
   robot.draw(world);
 
-  //声音控制
+  //sound control
   if (currentBG === 1) {
-  let freqValue = map(distance, 0, 400, 800, 200, true);
-  let ampValue = map(distance, 0, 400, 1.0, 0.0, true);
-  if (distance > 10) {
-    osc.freq(notes[noteIndex], 0.1);
-    osc.amp(ampValue, 0.1);
+    showTextBG1 = true;
+    let freqValue = map(distance, 0, 400, 800, 200, true);
+    let ampValue = map(distance, 0, 400, 1.0, 0.0, true);
+    if (distance > 10) {
+      osc.freq(notes[noteIndex], 0.1);
+      osc.amp(ampValue, 0.1);
   } else {
     osc.freq(0, 0.1);
   }
 } else {
   osc.amp(0, 0.1);
+  showTextBG1 = false;
 }
 
+//text display
+if (showTextSound) {
+  let textDuration = millis() - textStartTime;
+  if (textDuration < 5000) {
+    fill(255);
+    textAlign(CENTER, CENTER);
+    textSize(40);
+    text("Click the canvas...\nThat's how the robot react to you...",
+         width / 2, height / 2);
+  } else {
+    showTextSound = false;
+  }
+}
+
+if (showTextBG1) {
+  fill(255);
+  textSize(40);
+  text("3025AD",
+      100,40);
 // if (current BG === 4){
 
 // }
+}
 }
 
 
