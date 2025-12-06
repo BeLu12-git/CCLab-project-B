@@ -1,5 +1,9 @@
 //修改字体
-//添加BG2，BG3的声音，文字描述
+//添加声音：
+//BG2: experiment
+//BG3: battle
+
+
 let robot, ghost;
 let noteIndex = 0;
 let notes = [
@@ -36,7 +40,7 @@ let fade = 255;
 let world;
 let testMode = false; 
 let testStartTime = 0; 
-let testDuration = 20000; 
+let testDuration = 40000; 
 let mouseIsMoving = false; 
 let lastMouseMoveTime = 0; 
 let ghostVX = 0;
@@ -46,18 +50,30 @@ let robotVY = 0;
 let currentBG = 1;
 let showTextSound = false;
 let showTextBG1 = false;
-let textStartTime = 0;// 1=background1, 2=background2, 3=background3
+let showTextBG2 = false;
+let showTextBG3 = false;
+let textStartTime = 0;
 let DISTANCE_THRESHOLD = 5;
 let leftColor;
 let rightColor;
 let finalTint = 0.5;
 let tintColor;
+let transition12 = false;
+let transition12StartTime = 0;
+let transition12Duration = 6000;
+let transition23 = false;   
+let transition23StartTime = 0;
+let transition23Duration = 12000;   
+let sideIntensity = 0;
+let experimentCount = 0; 
+let boats =[];
+
 
 function preload() {
   img1 = loadImage("background1.png");
   img2 = loadImage("background2.png");
   img3 = loadImage("background3.png");
-  img4 = loadImage("background4.jpg");
+  img4 = loadImage("background4.png");
 }
 
 function setup() {
@@ -75,8 +91,8 @@ function setup() {
   osc.amp(0);
   osc.start();
 
-  ghost = new Ghost(width*3/4, height / 2);
-  robot = new Robot(width/4, height / 2);
+  ghost = new Ghost(width -200, height-400);
+  robot = new Robot(200, height-400);
   world = new World();
 
   testMode = false;
@@ -86,7 +102,15 @@ function setup() {
   leftColor = color(255,0,0);
   rightColor = color(0,0,255);
   finalTint = 0.5;
-  tintColor = lerpColor(leftColor, rightColor, finalTint); // 这里才安全
+  tintColor = lerpColor(leftColor, rightColor, finalTint); 
+
+
+  boats = [
+    new Boat(width * 0.2, height * 0.75, 1.0, 0),
+    new Boat(width * 0.5, height * 0.85, 1.5, 1),
+    new Boat(width * 0.8, height * 0.9, 0.8, 2)
+  ];
+
 }
 
 function draw() {
@@ -132,7 +156,6 @@ function draw() {
     robotAngry = true;
     robotHappy = false;
     robotEverAngry = true;
-    showTextSound = true; 
     osc.freq(1400,0.02);
     osc.amp(0.6,0.02);
     setTimeout(() => {
@@ -141,7 +164,6 @@ function draw() {
   }else if (testMode === false && currentBG === 1 && ghost.y > height * 0.35 && ghost.y < height * 0.45 && ghost.x > width * 0.7 && ghost.x < width * 0.8) {
     robotHappy = true;
     robotAngry = false;
-    showTextSound = true;
     osc.freq(900);
     osc.amp(0.35, 0.1);
     setTimeout(() => {
@@ -152,65 +174,91 @@ function draw() {
     robotHappy = false;
     robotHappy = false;
     showTextSound = true;
-    showTextSound = true;
     textStartTime = millis();
   } else if (testMode === false && currentBG === 1) {
     if (robot.y < height / 2 + 100 && robot.x < width / 2 - 100) {
       robotAngry = false;
       robotHappy = false;
-      showTextSound = true;
     }
   }
 
-  //切到BG2  
+  //BG1切到BG2  
   if (testMode === false && mouseIsMoving === true && robotEverAngry === true && setDistance < 50 && currentBG === 1) {
     testMode = true;
     testStartTime = millis();
     robotAngry = true;
-    fade = 255;
-    currentBG = 2;
+    transition12 = true;
+    transition12StartTime = millis();
+    
+}
 
+  
+//BG1 transition to BG2
+  if (transition12 === true) {
+     let t = (millis() - transition12StartTime) / transition12Duration;
+  t = constrain(t, 0, 1);
+  image(img1, 0, 0, width, height);
+  let darkMode = map(t, 0, 0.4, 0, 200, true);  // 前 40% 时间变暗
+  fill(0, darkMode);
+  noStroke();
+  rect(0, 0, width, height);
+  let textTransition = 0;
+  if (t > 0.2 && t < 0.8) {
+    let tt = map(t, 0.2, 0.8, 0, 1, true); // 0~1
+    if (tt < 0.5) {
+      textTransition = map(tt, 0, 0.5, 0, 255, true);
+    } else {
+      textTransition = map(tt, 0.5, 1, 255, 0, true);
+    }
+  }
+
+  if (textTransition > 0) {
+    fill(255, textTransition);
+    textAlign(CENTER, CENTER);
+    textSize(40);
+  let nth = experimentCount + 1;  
+  let tookWord;
+  if (nth === 1) {
+    tookWord = "one";
+  } else if (nth === 2) {
+    tookWord = "two";
+  } else if (nth === 3) {
+    tookWord = "three";
+  } else {
+    tookWord = String(nth);   
+  }
+
+  text(
+    "500 years ago...\nRobot Mind Experiment took " + tookWord + "...\nBut failed....",
+    width / 2,
+    height / 2
+  );
+  }
+
+ 
+  let bg2Alpha = map(t, 0.5, 1.0, 0, 255, true);
+  if (bg2Alpha > 0) {
+    tint(255, bg2Alpha);
+    image(img2, 0, 0, width, height);
+    noTint();
+  }
+
+  if (t >= 1) {
+    transition12 = false;
+    currentBG = 2;
+    experimentCount += 1;
     ghost.x = width * 3/4;
     ghost.y = height / 2;
     robot.x = width / 4;
     robot.y = height / 2;
-    ghostVX = random(-20, 20);
-    ghostVY = random(-20, 20);
-    robotVX = random(-20, 20);
-    robotVY = random(-20, 20);
-
-    if (abs(ghostVX) < 10) {
-  if (random() < 10) {
-    ghostVX = -20;
-  } else {
-    ghostVX = 20;
+    ghostVX = random(-5, 5);
+    ghostVY = random(-5, 5);
+    robotVX = random(-5, 5);
+    robotVY = random(-5, 5);
+   
   }
+  return;
 }
-    if (abs(ghostVY) < 10) {
-  if (random() < 10) {
-    ghostVY = -20;
-  } else {
-    ghostVY = 20;
-  }
-}
-    if (abs(robotVX) < 10) {
-  if (random() < 10) {
-    robotVX = -20;
-  } else {
-    robotVX = 20;
-  }
-}
-
-    if (abs(robotVY) < 10) {
-  if (random() < 0.5) {
-    robotVY = -20;
-  } else {
-    robotVY = 20;
-  }
-}
-
-  }
-
 
   //在BG2中，如果长时间无操作，回到BG1
   if (testMode === true && currentBG === 2) {
@@ -227,10 +275,66 @@ function draw() {
     }
   }
 
-  //切到BG3
-  if (testMode === true && currentBG === 2 && setDistance < 40 ) {
-    testMode = false;
-    robotAngry = false;
+  //BG2 transition to BG3
+if (testMode === true && currentBG === 2 && setDistance < 40 && !transition23) {
+  testMode = false;              
+  robotAngry = false;
+  transition23 = true;              
+  transition23StartTime = millis();
+}
+
+if (transition23 === true) {
+  let t = (millis() - transition23StartTime) / transition23Duration;
+  t = constrain(t, 0, 1);
+  image(img2, 0, 0, width, height);
+  let fireHeight = map(t, 0, 0.4, 0, height * 1.2, true);  
+  noStroke();
+  for (let y = height; y > height - fireHeight; y -= 10) {
+    let yy = map(y, height, height - fireHeight, 0, 1, true);
+    let r = lerp(255, 180, yy);
+    let g = lerp(180, 60, yy);
+    let b = lerp(0,   20, yy);
+    let a = lerp(150, 230, yy);     
+    fill(r, g, b, a);
+    rect(0, y, width, 12);
+  }
+
+  let darkMode23 = map(t, 0.3, 0.7, 0, 200, true);
+  fill(0, darkMode23);
+  rect(0, 0, width, height);
+
+  let textTransition23 = 0;
+  if (t > 0.1 && t < 0.9) {
+    let tt = map(t, 0.2, 0.8, 0, 1, true);
+    if (tt < 0.5) {
+      textTransition23 = map(tt, 0, 0.5, 0, 255, true);     // 先淡入
+    } else {
+      textTransition23 = map(tt, 0.5, 1, 255, 0, true);     // 再淡出
+    }
+  }
+
+  if (textTransition23 > 0) {
+    fill(255, textTransition23);
+    textAlign(CENTER, CENTER);
+    textSize(40);
+    text(
+      "2225AD\nYou were invited to the Robot Conference...\nTo decide whether or not implement the human mind transplantation experiment....",
+      width / 2,
+      height / 2
+    );
+  }
+
+  // 5. 后半段 BG3 渐渐显现
+  let bg3Alpha = map(t, 0.5, 1.0, 0, 255, true);
+  if (bg3Alpha > 0) {
+    tint(255, bg3Alpha);
+    image(img3, 0, 0, width, height);
+    noTint();
+  }
+
+  // 6. 转场结束：正式切到 BG3 并重置状态
+  if (t >= 1) {
+    transition23 = false;
     currentBG = 3;
     ghost.x = width * 3/4;
     ghost.y = height / 2;
@@ -241,24 +345,53 @@ function draw() {
     robotVX = 0;
     robotVY = 0;
   }
+  return;
+}
 
-  //在BG3中进行选择，回到BG1或BG4
+
+  //在BG3中进行进行渐变效果，回到BG1或BG4; currentBG对应
   if (currentBG === 3) {
     tint(tintColor);
     image(img3, 0, 0, width, height);
     noTint();
+     if (sideIntensity !== 0) {
+    let steps = 80;  
+    if (sideIntensity > 0) {
+      for (let i = 0; i < steps; i++) {
+        let x = width / 2 + (i / steps) * (width / 2);
+        let wStep = (width / 2) / steps;
+        let a = map(i, 0, steps - 1, 0, 200 * sideIntensity, true);
+        fill(255, 255, 255, a);
+        noStroke();
+        rect(x, 0, wStep + 1, height);
+      }
+    } else {
+      for (let i = 0; i < steps; i++) {
+        let x = (i / steps) * (width / 2);
+        let wStep = (width / 2) / steps;
+        let a = map(steps - 1 - i, 0, steps - 1, 0, 200 * -sideIntensity, true);
+        fill(0, 0, 0, a);
+        noStroke();
+        rect(x, 0, wStep + 1, height);
+      }
+    }
+  }
   } else if (currentBG === 2) {
     tint(255, 255);
     image(img2, 0, 0, width, height);
   } else if (currentBG === 4) {
     tint(255,255);
     image(img4,0,0,width,height);
+    noTint();
+    for (let i = 0; i < boats.length; i++) {
+    boats[i].update();
+    boats[i].draw();
+  }
   } else {
     tint(255, fade);
     image(img1, 0, 0, width, height);
     tint(255, 255 - fade);
     image(img2, 0, 0, width, height);
-
     if (setDistance < 100 && robotEverAngry === true) {
       if (0 < fade && fade < 255) {
         fade--;
@@ -266,18 +399,22 @@ function draw() {
     }
   }
 
-  //tint changed based on mouse movement direction in BG3
+  //BG3: tint changed based on mouse movement direction in BG3
   if(currentBG === 3){
     let angle = atan2(mouseY - pmouseY, mouseX - pmouseX);
     let distance = dist(mouseX, mouseY, pmouseX, pmouseY);
     let baseTint = 0.5;
+    sideIntensity *= 0.9;
+
     if (distance > DISTANCE_THRESHOLD) {
       let t = map(distance, DISTANCE_THRESHOLD, 50, 0, 1, true);
       if (angle > radians(-45) && angle < radians(45)) {
       finalTint = constrain(baseTint + t * 0.5, 0, 1);
+      sideIntensity = constrain(sideIntensity + 0.1 * t, -1, 1);
     }
       else if (angle > radians(135) || angle < radians(-135)) {
        finalTint = constrain(baseTint - t * 0.5, 0, 1);
+      sideIntensity = constrain(sideIntensity - 0.1 * t, -1, 1);
     }
   } 
   tintColor = lerpColor(leftColor, rightColor, finalTint);
@@ -294,11 +431,11 @@ function draw() {
       let targetX = mouseX;
       let targetY = mouseY;
 
-      ghost.x += (targetX - ghost.x) * 0.03;
-      ghost.y += (targetY - ghost.y) * 0.03;
+      ghost.x += (targetX - ghost.x) * 0.005;
+      ghost.y += (targetY - ghost.y) * 0.005;
 
-      robot.x += (targetX - robot.x) * 0.03;
-      robot.y += (targetY - robot.y) * 0.03;
+      robot.x += (targetX - robot.x) * 0.005;
+      robot.y += (targetY - robot.y) * 0.005;
     }
     //防止浮动时，碰到border
     if (ghost.x < 40 || ghost.x > width - 40) {
@@ -338,8 +475,14 @@ function draw() {
   setDistance = distance;
   world.update(distance);
 
+  if (currentBG === 1 || currentBG === 2) {
   ghost.draw(world);
   robot.draw(world);
+  }
+
+  if (currentBG === 1 && distance < 200) {
+    drawMusicNotes();
+  }
 
   //sound control
   if (currentBG === 1) {
@@ -376,12 +519,8 @@ if (showTextBG1) {
   textSize(40);
   text("3025AD",
       100,40);
-// if (current BG === 4){
-
-// }
 }
 }
-
 
 class Ghost {
   constructor(x, y) {
@@ -391,11 +530,9 @@ class Ghost {
     this.prevY = y;
     this.dx = 0;
     this.dy = 0;
-    this.normalColor = color(255, 255,255,160);
-    this.alertColor = color(199,166,120,200);
+    this.normalColor = color(255, 255, 255, 200);
+    this.alertColor = color(199, 166, 120, 230);
   }
-
- 
 
   draw(world) {
     push();
@@ -407,14 +544,44 @@ class Ghost {
     } else {
       fill(this.normalColor);
     }
-    ellipse(0, 0, 210, 270);
 
-    fill(0);
-    ellipse(-45, -15, 36, 36);
-    ellipse(45, -15, 36, 36);
+    
+    let w = 220;
+    let h = 260;
+    let halfW = w / 2;
+    let topJoinY = -h * 0.15;   
+    let midY = h * 0.10;        
+    let waveTopY = h * 0.28;    
+    let waveBottomY = h * 0.40; 
+
+    arc(0, topJoinY, 220, 260, PI, 0, OPEN);
+
+    beginShape();
+    curveVertex(-halfW, topJoinY);
+    curveVertex(-halfW, topJoinY);
+    curveVertex(-halfW, midY);
+    curveVertex(-halfW * 0.6, waveBottomY);
+    curveVertex(-halfW * 0.2, waveTopY);
+    curveVertex(0, waveBottomY);
+    curveVertex(halfW * 0.2, waveTopY);
+    curveVertex(halfW * 0.6, waveBottomY);
+    curveVertex(halfW, waveTopY);
+    curveVertex(halfW, midY);
+    curveVertex(halfW, topJoinY);
+    curveVertex(halfW, topJoinY);
+    endShape(CLOSE);
+
+    fill(0, 200);
+    let eyeOffsetX = 40;
+    let eyeY = topJoinY + 30;
+    ellipse(-eyeOffsetX, eyeY, 32, 42);
+    ellipse(eyeOffsetX, eyeY, 32, 42);
+
     pop();
   }
 }
+
+
 
 class Robot {
   constructor(x, y) {
@@ -432,86 +599,70 @@ class Robot {
     noStroke();
 
     if (robotAngry === true) {
-      fill(255, 60, 60);
-    }
-    else if (setDistance < 100) {
-      fill(92, 114, 125);
+      fill(255, 120, 120);
+    } else if (setDistance < 100) {
+      fill(this.alertBody);
     } else {
-      fill(180);
+      fill(this.normalColor);
     }
 
     rect(0, 0, 180, 210, 30);
+
+   
     fill(150);
-    ellipse(-45, -30, 45, 45);
-    ellipse(45, -30, 45, 45);
+    ellipse(-75, -20, 25, 60);
+    ellipse(75, -20, 25, 60);
 
-    if (robotAngry === true) {
-      noStroke();
-      fill(255, 140, 0, 180);
-      ellipse(0, 10, 220, 280);
-      fill(255, 220, 0, 200);
-      ellipse(0, 20, 170, 240);
-      fill(255, 255, 255, 200);
-      ellipse(0, 30, 120, 160);
-    }
-    noStroke();
-    rect(0, 0, 180, 210, 30);
+   
+    fill(220);
+    rect(0, -40, 130, 50, 15);
 
+    
     fill(0);
-    ellipse(-45, -30, 45, 45);
-    ellipse(45, -30, 45, 45);
+    ellipse(-35, -40, 30, 30);
+    ellipse(35, -40, 30, 30);
 
     if (robotAngry === true) {
-      stroke(0);
-      strokeWeight(5);
-      line(-65, -60, -25, -50);
-      line(65, -60, 25, -50);
-
-      noStroke();
-      fill(255, 255, 255);
-      ellipse(-55, -35, 10, 10);
-      ellipse(35, -35, 10, 10);
-
-      stroke(0);
-      strokeWeight(4);
-      noFill();
-      line(-20, 35, 20, 35);
-      arc(0, 40, 50, 20, 0, PI);
-
-      fill(255);
-      noStroke();
-      triangle(-15, 35, -5, 35, -10, 45);
-      triangle(5, 35, 15, 35, 10, 45);
+      fill(255, 50, 50);
+      ellipse(-35, -40, 16, 16);
+      ellipse(35, -40, 16, 16);
     }
-
-      if (robotHappy === true) {
+    if (robotAngry === true) {
+      stroke(0);
+      strokeWeight(6);
+      line(-55, -55, -20, -45); 
+      line(55, -55, 20, -45);   
+      noStroke();
+      fill(255, 150, 0, 200);
+      ellipse(0, -120, 60, 80);
+      fill(255, 220, 0, 220);
+      ellipse(0, -115, 40, 60);
+    } else if (robotHappy === true) {
       fill(137, 207, 140);
       stroke(0);
       strokeWeight(4);
       rect(0, 0, 180, 210, 30);
       fill(0);
-      ellipse(-45, -30, 45, 45);
-      ellipse(45, -30, 45, 45);
+      ellipse(-35, -40, 30, 30);
+      ellipse(35, -40, 30, 30);
       fill(255);
-      ellipse(-52, -35, 10, 10);
-      ellipse(38, -35, 10, 10);
+      ellipse(-40, -45, 8, 8);
+      ellipse(30, -45, 8, 8);
       stroke(0);
-      strokeWeight(5);
-      line(-65, -55, -30, -50);
-      line(65, -55, 30, -50);
+      strokeWeight(4);
+      line(-50, -55, -30, -50);
+      line(50, -55, 30, -50);
       noFill();
       stroke(0);
       strokeWeight(5);
-      arc(0, 30, 80, 50, 0, PI);
+      arc(0, 15, 80, 50, 0, PI);
       noStroke();
-
-
     }
 
     pop();
   }
-
 }
+
 
 
 class World{
@@ -558,3 +709,94 @@ function mousePressed() {
     osc.freq(notes[noteIndex], 0.1);
   }
 }
+
+class Boat {
+  constructor(x, y, vx, index) {
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.index = index; // 用于选择不同颜色标志
+  }
+
+  update() {
+    // 水平移动
+    this.x += this.vx;
+    if (this.x > width + 80) {
+      this.x = -80;
+    }
+
+    // 轻微上下浮动（根据全局 frameCount）
+    this.currentY = this.y + sin(frameCount * 0.02) * 5;
+  }
+
+  draw() {
+    // 每艘船的颜色标志
+    let markColors = [
+      color(0, 200, 255),   // 青蓝
+      color(255, 120, 0),   // 橙色
+      color(120, 255, 120)  // 绿色
+    ];
+    let c = markColors[this.index % markColors.length];
+
+    push();
+    translate(this.x, this.currentY);
+    noStroke();
+
+    // 船身：银灰色主体
+    fill(190); // 银灰色
+    ellipse(0, 0, 90, 26);      // 主体椭圆
+
+    // 上方舱体
+    fill(210);
+    rect(0, -8, 40, 14, 6);
+
+    // 金属高光
+    fill(230, 230, 230, 180);
+    ellipse(-20, -2, 16, 6);
+    ellipse(25, 2, 18, 6);
+
+    // 舷窗
+    fill(40);
+    ellipse(-10, -4, 6, 6);
+    ellipse(0, -4, 6, 6);
+    ellipse(10, -4, 6, 6);
+
+    // 底部推进器
+    fill(150);
+    rect(-35, 3, 10, 10, 3);
+    rect(35, 3, 10, 10, 3);
+
+    // 颜色标志：发光圆环
+    fill(c);
+    ellipse(0, 5, 14, 14);
+    fill(255, 255, 255, 180);
+    ellipse(0, 5, 6, 6);
+
+    pop();
+  }
+}
+
+function drawMusicNotes() {
+  push();
+  translate(width / 2, height / 2); // 画布中间为中心
+  noFill();
+  stroke(255);
+  strokeWeight(4);
+
+  line(-20, 20, -20, -40);
+  fill(255);
+  ellipse(-10, 25, 20, 16);
+  noFill();
+  stroke(255);
+  strokeWeight(4);
+  line(20, 0, 20, -50);
+  fill(255);
+  ellipse(30, 5, 18, 14);
+  noFill();
+  stroke(255);
+  strokeWeight(3);
+  bezier(20, -50, 35, -60, 45, -55, 55, -45);
+  pop();
+}
+
+
