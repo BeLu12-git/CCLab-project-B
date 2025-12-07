@@ -67,13 +67,33 @@ let transition23Duration = 12000;
 let sideIntensity = 0;
 let experimentCount = 0; 
 let boats =[];
-
+let oppenheimer;
+let meetingkitty;
+let thebattleinthesnow;
+let quantummechanics;
+let fusion;
+let theimperialmarch;
+let angry;
+let happy;
+let angryPlayed = false;
+let happyPlayed = false;
+let musicPlaying = false;
+let showTimeText = false;
+let timeTextStart = 0;
 
 function preload() {
   img1 = loadImage("background1.png");
   img2 = loadImage("background2.png");
   img3 = loadImage("background3.png");
   img4 = loadImage("background4.png");
+  oppenheimer = loadSound("oppenheimer.mp3");
+  meetingkitty = loadSound("meetingkitty.mp3");
+  thebattleinthesnow = loadSound("thebattleinthesnow.mp3");
+  quantummechanics = loadSound("quantummechanics.mp3");
+  fusion = loadSound("fusion.mp3");
+  theimperialmarch = loadSound("theimperialmarch.mp3");
+  angry = loadSound("angry.wav");
+  happy = loadSound("happy.wav");
 }
 
 function setup() {
@@ -129,6 +149,8 @@ function draw() {
   setDistance = distance;
   world.update(distance);
 
+  
+
   //constrain ghost in the right half
   if (testMode === false && currentBG === 1) {
     ghost.prevX = ghost.x;
@@ -152,25 +174,40 @@ function draw() {
 
 
   //BG1: angrymode and happymode and sound reminder
-  if (testMode === false && currentBG === 1 && ghost.y > height * 0.2 &&ghost.y < height * 0.3 && ghost.x > width *0.7 && ghost.x < width * 0.8) {
+  if (testMode === false && currentBG === 1 
+    && ghost.y > height * 0.2 &&ghost.y < height * 0.3 
+    && ghost.x > width *0.7 && ghost.x < width * 0.8) {
     robotAngry = true;
     robotHappy = false;
     robotEverAngry = true;
-    osc.freq(1400,0.02);
-    osc.amp(0.6,0.02);
-    setTimeout(() => {
-      osc.amp(0, 0.2);
-    }, 180);
-  }else if (testMode === false && currentBG === 1 && ghost.y > height * 0.35 && ghost.y < height * 0.45 && ghost.x > width * 0.7 && ghost.x < width * 0.8) {
+    if(angry.isPlaying() === false ){
+      angryPlayed = true;
+      happyPlayed = false;
+      if (happy.isPlaying()){
+        happy.stop();
+      }
+      if (angry.isPlaying() === false ){
+        angry.play();
+      }
+    }
+  }else if (testMode === false && currentBG === 1 
+    && ghost.y > height * 0.35 && ghost.y < height * 0.45 
+    && ghost.x > width * 0.7 && ghost.x < width * 0.8) {
     robotHappy = true;
     robotAngry = false;
-    osc.freq(900);
-    osc.amp(0.35, 0.1);
-    setTimeout(() => {
-      osc.freq(1000, 0.15);
-      osc.amp(0.0, 0.3);  
-    }, 180);
-  } else if(testMode === false && currentBG === 1 && ghost.y > height * 0.45 && ghost.y < height * 0.55 && ghost.x > width * 0.7 && ghost.x < width * 0.8 ) {
+    if (happyPlayed === false){ 
+    happyPlayed = true;
+    angryPlayed = false;           // 退出 angry 状态
+    if (angry.isPlaying()){
+      angry.stop();
+    } 
+    if (happy.isPlaying() === false){
+      happy.play();
+    } 
+  }
+  } else if(testMode === false && currentBG === 1 
+    && ghost.y > height * 0.45 && ghost.y < height * 0.65 
+    && ghost.x > width * 0.7 && ghost.x < width * 0.8 ) {
     robotHappy = false;
     robotHappy = false;
     showTextSound = true;
@@ -182,15 +219,8 @@ function draw() {
     }
   }
 
-  //BG1切到BG2  
-  if (testMode === false && mouseIsMoving === true && robotEverAngry === true && setDistance < 50 && currentBG === 1) {
-    testMode = true;
-    testStartTime = millis();
-    robotAngry = true;
-    transition12 = true;
-    transition12StartTime = millis();
-    
-}
+
+  
 
   
 //BG1 transition to BG2
@@ -247,6 +277,13 @@ function draw() {
     transition12 = false;
     currentBG = 2;
     experimentCount += 1;
+    fadeOutSound(quantummechanics, 1000, () => {
+    if (!fusion.isPlaying()) {
+      fusion.setVolume(1.0);
+      fusion.play();
+    }
+  });
+
     ghost.x = width * 3/4;
     ghost.y = height / 2;
     robot.x = width / 4;
@@ -268,6 +305,8 @@ function draw() {
       robotHappy = false;
       currentBG = 1;
 
+      fadeOutSound(fusion, 1000);
+
       ghost.x = width * 3/4;
       ghost.y = height / 2;
       robot.x = width / 4;
@@ -281,6 +320,8 @@ if (testMode === true && currentBG === 2 && setDistance < 40 && !transition23) {
   robotAngry = false;
   transition23 = true;              
   transition23StartTime = millis();
+
+  fadeOutSound(fusion, 1000);
 }
 
 if (transition23 === true) {
@@ -418,6 +459,28 @@ if (transition23 === true) {
     }
   } 
   tintColor = lerpColor(leftColor, rightColor, finalTint);
+
+ if (currentBG === 3) {
+  if (mouseX < width / 2) {
+    // 鼠标在左半屏：淡出 oppenheimer，开始 battle
+    if (!thebattleinthesnow.isPlaying()) {
+      fadeOutSound(oppenheimer, 800, () => {
+        thebattleinthesnow.setVolume(1.0);
+        thebattleinthesnow.play();
+      });
+    }
+  } else {
+    // 鼠标在右半屏：淡出 battle，开始 oppenheimer
+    if (!oppenheimer.isPlaying()) {
+      fadeOutSound(thebattleinthesnow, 800, () => {
+        oppenheimer.setVolume(1.0);
+        oppenheimer.play();
+      });
+    }
+  }
+}
+  fadeOutSound(thebattleinthesnow, 800);
+  fadeOutSound(oppenheimer, 800);
   }
 
   //在BG2中，相互碰撞
@@ -484,30 +547,14 @@ if (transition23 === true) {
     drawMusicNotes();
   }
 
-  //sound control
-  if (currentBG === 1) {
-    showTextBG1 = true;
-    let freqValue = map(distance, 0, 400, 800, 200, true);
-    let ampValue = map(distance, 0, 400, 1.0, 0.0, true);
-    if (distance > 10) {
-      osc.freq(notes[noteIndex], 0.1);
-      osc.amp(ampValue, 0.1);
-  } else {
-    osc.freq(0, 0.1);
-  }
-} else {
-  osc.amp(0, 0.1);
-  showTextBG1 = false;
-}
-
 //text display
 if (showTextSound) {
   let textDuration = millis() - textStartTime;
-  if (textDuration < 5000) {
+  if (textDuration < 3000) {
     fill(255);
     textAlign(CENTER, CENTER);
     textSize(40);
-    text("Click the canvas...\nThat's how the robot react to you...",
+    text("Time... Time... Time...",
          width / 2, height / 2);
   } else {
     showTextSound = false;
@@ -685,28 +732,51 @@ function mousePressed() {
     robot.x = width / 4;
     robot.y = height / 2;
 
-    if (mouseX < width / 2) {
+  if (thebattleinthesnow.isPlaying()) {
+      thebattleinthesnow.stop();
+    }
+  if (fusion.isPlaying()) {
+    fusion.stop();
+  }
+  
+  if (mouseX < width / 2) {
       currentBG = 1;
       testMode = false;
       fade = 255;
     } else {
       currentBG = 4;
       testMode = false;
+       fadeOutSound(thebattleinthesnow, 800);
+  fadeOutSound(oppenheimer, 800, () => {
+    if (!meetingkitty.isPlaying()) {
+      meetingkitty.setVolume(1.0);
+      meetingkitty.play();
     }
+  });
+  }
+  }
+  if (currentBG === 1 &&
+      mouseX < width * 0.40 && mouseX > width * 0.3 &&
+      mouseY < height * 0.7 && mouseY > height * 0.6 &&
+      testMode === false && robotEverAngry === true) {
+
+    testMode = true;
+    testStartTime = millis();
+    robotAngry = true;
+    transition12 = true;
+    transition12StartTime = millis();
     return;
   }
 
-  if (oscIsPlaying === false) {
-    osc.start();
-    osc.amp(0.4, 0.2);
-    oscIsPlaying = true;
-  }
-
-  noteIndex++;
-  if (noteIndex >= notes.length) noteIndex = 0;
-
-  if (oscIsPlaying === true) {
-    osc.freq(notes[noteIndex], 0.1);
+  if (currentBG === 1 && mouseOnMusicNotes()) {
+    if (!musicPlaying) {
+      quantummechanics.play();
+      musicPlaying = true;
+    } else {
+      quantummechanics.pause();
+      musicPlaying = false;
+    }
+  return
   }
 }
 
@@ -795,8 +865,43 @@ function drawMusicNotes() {
   noFill();
   stroke(255);
   strokeWeight(3);
-  bezier(20, -50, 35, -60, 45, -55, 55, -45);
+  bezier(-20, -40, -5, -60, 5, -55, 20, -50);
   pop();
 }
 
+function mouseOnMusicNotes() {
+  // 这里假设音符整体是以 (width/2, height/2) 为中心的矩形区域
+  let cx = width / 2;
+  let cy = height / 2;
+  let w = 120; // 区域宽
+  let h = 120; // 区域高
 
+  return (mouseX > cx - w/2 && mouseX < cx + w/2 &&
+          mouseY > cy - h/2 && mouseY < cy + h/2);
+}
+
+// this part was generated by AI;让一个声音在 duration 毫秒内从当前音量淡出到 0，然后调用回调函数（可选）
+function fadeOutSound(snd, duration, onDone) {
+  if (!snd || !snd.isPlaying()) {
+    if (onDone) onDone();
+    return;
+  }
+
+  let startTime = millis();
+  let startVol = snd.getVolume ? snd.getVolume() : 1.0; // 如果没设过音量，则认为是 1
+
+  function step() {
+    let t = (millis() - startTime) / duration;
+    if (t >= 1) {
+      snd.setVolume(0);
+      snd.stop();
+      if (onDone) onDone();
+    } else {
+      let v = startVol * (1 - t);
+      snd.setVolume(v);
+      requestAnimationFrame(step);
+    }
+  }
+
+  step();
+}
