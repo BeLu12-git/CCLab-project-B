@@ -1,9 +1,3 @@
-//修改字体
-//添加声音：
-//BG2: experiment
-//BG3: battle
-
-
 let robot, ghost;
 let noteIndex = 0;
 let notes = [
@@ -49,9 +43,6 @@ let robotVX = 0;
 let robotVY = 0;
 let currentBG = 1;
 let showTextSound = false;
-let showTextBG1 = false;
-let showTextBG2 = false;
-let showTextBG3 = false;
 let textStartTime = 0;
 let DISTANCE_THRESHOLD = 5;
 let leftColor;
@@ -60,10 +51,13 @@ let finalTint = 0.5;
 let tintColor;
 let transition12 = false;
 let transition12StartTime = 0;
-let transition12Duration = 6000;
+let transition12Duration = 10000; 
 let transition23 = false;   
 let transition23StartTime = 0;
-let transition23Duration = 12000;   
+let transition23Duration = 10000;
+let transition34 = false;
+let transition34StartTime = 0;
+let transition34Duration = 6000; 
 let sideIntensity = 0;
 let experimentCount = 0; 
 let boats =[];
@@ -75,11 +69,11 @@ let fusion;
 let theimperialmarch;
 let angry;
 let happy;
+let robotBg;
 let angryPlayed = false;
 let happyPlayed = false;
 let musicPlaying = false;
-let showTimeText = false;
-let timeTextStart = 0;
+let img1, img2, img3, img4;
 
 function preload() {
   img1 = loadImage("background1.png");
@@ -94,6 +88,7 @@ function preload() {
   theimperialmarch = loadSound("theimperialmarch.mp3");
   angry = loadSound("angry.wav");
   happy = loadSound("happy.wav");
+  robotBg = loadSound("robot.flac");
 }
 
 function setup() {
@@ -111,10 +106,14 @@ function setup() {
   osc.amp(0);
   osc.start();
 
-  ghost = new Ghost(width -200, height-400);
-  robot = new Robot(200, height-400);
+  ghost = new Ghost(width * 0.75, height * 0.5);
+  robot = new Robot(width * 0.25, height * 0.5);
   world = new World();
-
+  boats = [
+    new Boat(width * 0.2, height * 0.75, 1.0, 0),
+    new Boat(width * 0.5, height * 0.85, 1.5, 1),
+    new Boat(width * 0.8, height * 0.9, 0.8, 2)
+  ];
   testMode = false;
   mouseIsMoving = false;
   lastMouseMoveTime = millis();
@@ -124,13 +123,7 @@ function setup() {
   finalTint = 0.5;
   tintColor = lerpColor(leftColor, rightColor, finalTint); 
 
-
-  boats = [
-    new Boat(width * 0.2, height * 0.75, 1.0, 0),
-    new Boat(width * 0.5, height * 0.85, 1.5, 1),
-    new Boat(width * 0.8, height * 0.9, 0.8, 2)
-  ];
-
+ 
 }
 
 function draw() {
@@ -149,140 +142,135 @@ function draw() {
   setDistance = distance;
   world.update(distance);
 
-  
-
-  //constrain ghost in the right half
-  if (testMode === false && currentBG === 1) {
+  //ghost和robot呈镜像；ghost永远在画布右端
+  if (!testMode && currentBG === 1) {
     ghost.prevX = ghost.x;
     ghost.prevY = ghost.y;
-
     let targetX = constrain(mouseX, width / 2, width - 40);
     let targetY = constrain(mouseY, 40, height - 40);
-
     ghost.x += (targetX - ghost.x) * 0.18;
     ghost.y += (targetY - ghost.y) * 0.18;
-
     ghost.dx = ghost.x - ghost.prevX;
     ghost.dy = ghost.y - ghost.prevY;
-
     robot.x = width - ghost.x;
     robot.y = ghost.y;
-
+   
     robot.x = constrain(robot.x, 40, width/2 - 40);
     robot.y = constrain(robot.y, 40, height - 40);
   }
 
-
-  //BG1: angrymode and happymode and sound reminder
-  if (testMode === false && currentBG === 1 
-    && ghost.y > height * 0.2 &&ghost.y < height * 0.3 
-    && ghost.x > width *0.7 && ghost.x < width * 0.8) {
+  //angry & happy mode
+  if (!testMode && currentBG === 1 
+      && ghost.y > height * 0.2 && ghost.y < height * 0.3 
+      && ghost.x > width * 0.7 && ghost.x < width * 0.8) {
     robotAngry = true;
     robotHappy = false;
     robotEverAngry = true;
-    if(angry.isPlaying() === false ){
+    if (!angry.isPlaying()) {
       angryPlayed = true;
       happyPlayed = false;
-      if (happy.isPlaying()){
-        happy.stop();
-      }
-      if (angry.isPlaying() === false ){
-        angry.play();
-      }
+      if (happy.isPlaying()) happy.stop();
+      angry.play();
     }
-  }else if (testMode === false && currentBG === 1 
-    && ghost.y > height * 0.35 && ghost.y < height * 0.45 
-    && ghost.x > width * 0.7 && ghost.x < width * 0.8) {
+  } else if (!testMode && currentBG === 1 
+      && ghost.y > height * 0.35 && ghost.y < height * 0.45 
+      && ghost.x > width * 0.7 && ghost.x < width * 0.8) {
     robotHappy = true;
     robotAngry = false;
-    if (happyPlayed === false){ 
-    happyPlayed = true;
-    angryPlayed = false;           // 退出 angry 状态
-    if (angry.isPlaying()){
-      angry.stop();
-    } 
-    if (happy.isPlaying() === false){
-      happy.play();
-    } 
-  }
-  } else if(testMode === false && currentBG === 1 
-    && ghost.y > height * 0.45 && ghost.y < height * 0.65 
-    && ghost.x > width * 0.7 && ghost.x < width * 0.8 ) {
-    robotHappy = false;
+    if (!happyPlayed){ 
+      happyPlayed = true;
+      angryPlayed = false;
+      if (angry.isPlaying()){
+         angry.stop();
+      }
+      if (!happy.isPlaying()) {
+        happy.play();
+      }
+    }
+  } else if (!testMode && currentBG === 1 
+      && ghost.y > height * 0.45 && ghost.y < height * 0.65 
+      && ghost.x > width * 0.7 && ghost.x < width * 0.8 ) {
     robotHappy = false;
     showTextSound = true;
     textStartTime = millis();
-  } else if (testMode === false && currentBG === 1) {
+  } else if (!testMode && currentBG === 1) {
     if (robot.y < height / 2 + 100 && robot.x < width / 2 - 100) {
       robotAngry = false;
       robotHappy = false;
     }
   }
 
+  //BG1 transition to BG2
+  if (transition12) {
+    let time12 = millis() - transition12StartTime;
+    let t = constrain(time12 / transition12Duration, 0, 1);
+    image(img1, 0, 0, width, height);
+  if (t <= 0.5) {
+      let t1 = map(t, 0, 0.5, 0, 1, true);
+      let darkMode = map(t1, 0, 1, 0, 200, true);
+      fill(0, darkMode);
+      noStroke();
+      rect(0, 0, width, height);
 
-  
+  let text1 = map(t1, 0, 1, 0, 255, true);
+  fill(255, text1);
+  textAlign(CENTER, CENTER);
+  textSize(40);
 
-  
-//BG1 transition to BG2
-  if (transition12 === true) {
-     let t = (millis() - transition12StartTime) / transition12Duration;
-  t = constrain(t, 0, 1);
-  image(img1, 0, 0, width, height);
-  let darkMode = map(t, 0, 0.4, 0, 200, true);  // 前 40% 时间变暗
-  fill(0, darkMode);
-  noStroke();
-  rect(0, 0, width, height);
-  let textTransition = 0;
-  if (t > 0.2 && t < 0.8) {
-    let tt = map(t, 0.2, 0.8, 0, 1, true); // 0~1
-    if (tt < 0.5) {
-      textTransition = map(tt, 0, 0.5, 0, 255, true);
-    } else {
-      textTransition = map(tt, 0.5, 1, 255, 0, true);
-    }
-  }
-
-  if (textTransition > 0) {
-    fill(255, textTransition);
-    textAlign(CENTER, CENTER);
-    textSize(40);
   let nth = experimentCount + 1;  
   let tookWord;
-  if (nth === 1) {
-    tookWord = "one";
-  } else if (nth === 2) {
-    tookWord = "two";
-  } else if (nth === 3) {
-    tookWord = "three";
-  } else {
-    tookWord = String(nth);   
-  }
+  if (nth === 1)      tookWord = "one";
+  else if (nth === 2) tookWord = "two";
+  else if (nth === 3) tookWord = "three";
+  else                tookWord = String(nth);
 
   text(
-    "500 years ago...\nRobot Mind Experiment took " + tookWord + "...\nBut failed....",
+          "500 years ago...\nRobot Mind Experiment took " + 
+          tookWord + "...\nBut failed....",
     width / 2,
     height / 2
-  );
-  }
+    );
 
- 
-  let bg2Alpha = map(t, 0.5, 1.0, 0, 255, true);
-  if (bg2Alpha > 0) {
-    tint(255, bg2Alpha);
-    image(img2, 0, 0, width, height);
-    noTint();
+  } else {
+      // 后 5 秒：文字淡出 + BG2 渐亮
+    let t2 = map(t, 0.5, 1, 0, 1, true);
+
+    let text1 = map(t2, 0, 1, 255, 0, true);
+    fill(255, text1);
+    textAlign(CENTER, CENTER);
+    textSize(40);
+
+  let nth = experimentCount + 1;  
+  let tookWord;
+  if (nth === 1)      tookWord = "one";
+  else if (nth === 2) tookWord = "two";
+  else if (nth === 3) tookWord = "three";
+  else                tookWord = String(nth);
+
+text(
+  "500 years ago...\nRobot Mind Experiment took " + tookWord + "...\nBut failed....",
+  width / 2,
+  height / 2
+);
+
+
+  let bg2Alpha = map(t2, 0, 1, 0, 255, true);
+  tint(255, bg2Alpha);
+  image(img2, 0, 0, width, height);
+  noTint();
   }
 
   if (t >= 1) {
     transition12 = false;
     currentBG = 2;
     experimentCount += 1;
+
     fadeOutSound(quantummechanics, 1000, () => {
-    if (!fusion.isPlaying()) {
-      fusion.setVolume(1.0);
-      fusion.play();
-    }
-  });
+      if (!fusion.isPlaying()) {
+        fusion.setVolume(1.0);
+        fusion.play();
+        }
+      });
 
     ghost.x = width * 3/4;
     ghost.y = height / 2;
@@ -292,19 +280,17 @@ function draw() {
     ghostVY = random(-5, 5);
     robotVX = random(-5, 5);
     robotVY = random(-5, 5);
-   
+    }
+    return;
   }
-  return;
-}
 
-  //在BG2中，如果长时间无操作，回到BG1
-  if (testMode === true && currentBG === 2) {
+ //BG2 back to BG1
+  if (testMode && currentBG === 2) {
     if (millis() - testStartTime > testDuration) {
       testMode = false;
       robotAngry = false;
       robotHappy = false;
       currentBG = 1;
-
       fadeOutSound(fusion, 1000);
 
       ghost.x = width * 3/4;
@@ -314,178 +300,193 @@ function draw() {
     }
   }
 
-  //BG2 transition to BG3
-if (testMode === true && currentBG === 2 && setDistance < 40 && !transition23) {
-  testMode = false;              
-  robotAngry = false;
-  transition23 = true;              
-  transition23StartTime = millis();
-
-  fadeOutSound(fusion, 1000);
-}
-
-if (transition23 === true) {
-  let t = (millis() - transition23StartTime) / transition23Duration;
-  t = constrain(t, 0, 1);
-  image(img2, 0, 0, width, height);
-  let fireHeight = map(t, 0, 0.4, 0, height * 1.2, true);  
-  noStroke();
-  for (let y = height; y > height - fireHeight; y -= 10) {
-    let yy = map(y, height, height - fireHeight, 0, 1, true);
-    let r = lerp(255, 180, yy);
-    let g = lerp(180, 60, yy);
-    let b = lerp(0,   20, yy);
-    let a = lerp(150, 230, yy);     
-    fill(r, g, b, a);
-    rect(0, y, width, 12);
+ //BG2 transition to BG3
+  if (testMode && currentBG === 2 && setDistance < 40 && !transition23) {
+    testMode = false;              
+    robotAngry = false;
+    transition23 = true;              
+    transition23StartTime = millis();
+    fadeOutSound(fusion, 1000);
   }
 
-  let darkMode23 = map(t, 0.3, 0.7, 0, 200, true);
-  fill(0, darkMode23);
-  rect(0, 0, width, height);
 
-  let textTransition23 = 0;
-  if (t > 0.1 && t < 0.9) {
-    let tt = map(t, 0.2, 0.8, 0, 1, true);
-    if (tt < 0.5) {
-      textTransition23 = map(tt, 0, 0.5, 0, 255, true);     // 先淡入
-    } else {
-      textTransition23 = map(tt, 0.5, 1, 255, 0, true);     // 再淡出
+  if (transition23) {
+    let elapsed = millis() - transition23StartTime;
+    let t = constrain(elapsed / transition23Duration, 0, 1);
+    image(img2, 0, 0, width, height);
+
+    //fire
+    let firePhase = constrain(map(t, 0, 0.5, 0, 1), 0, 1);
+    let fireHeight = map(firePhase, 0, 1, 0, height * 1.2, true);  
+    noStroke();
+    for (let y = height; y > height - fireHeight; y -= 10) {
+      let yy = map(y, height, height - fireHeight, 0, 1, true);
+      let r = lerp(255, 180, yy);
+      let g = lerp(180, 60, yy);
+      let b = lerp(0,   20, yy);
+      let a = lerp(150, 230, yy);     
+      fill(r, g, b, a);
+      rect(0, y, width, 12);
     }
-  }
+    if (t > 0.5) {
+      let t2 = map(t, 0.5, 1, 0, 1, true);
 
-  if (textTransition23 > 0) {
-    fill(255, textTransition23);
+      let darkMode = map(t2, 0, 1, 0, 200, true);
+      fill(0, darkMode);
+      noStroke();
+      rect(0, 0, width, height);
+
+      let text1;
+      if (t2 < 0.5) {
+        text1 = map(t2, 0, 0.5, 0, 255, true);
+      } else {
+        text1 = map(t2, 0.5, 1, 255, 0, true);
+      }
+
+    fill(255, text1);
     textAlign(CENTER, CENTER);
     textSize(40);
     text(
-      "2225AD\nYou were invited to the Robot Conference...\nTo decide whether or not implement the human mind transplantation experiment....",
-      width / 2,
-      height / 2
-    );
+        "2225AD\nYou were invited to the Robot Conference...\nTo decide whether or not implement the human mind transplantation experiment....",
+        width / 2,
+        height / 2
+      );
+
+      let bg3Alpha = map(t2, 0, 1, 0, 255, true);
+      tint(255, bg3Alpha);
+      image(img3, 0, 0, width, height);
+      noTint();
+    }
+
+    if (t >= 1) {
+      transition23 = false;
+      currentBG = 3;
+      ghost.x = width * 3/4;
+      ghost.y = height / 2;
+      robot.x = width / 4;
+      robot.y = height / 2;
+      ghostVX = 0;
+      ghostVY = 0;
+      robotVX = 0;
+      robotVY = 0;
+    }
+    return;
   }
 
-  // 5. 后半段 BG3 渐渐显现
-  let bg3Alpha = map(t, 0.5, 1.0, 0, 255, true);
-  if (bg3Alpha > 0) {
-    tint(255, bg3Alpha);
+  // BG3 transition to BG4
+  if (transition34) {
+    let elapsed = millis() - transition34StartTime;
+    let t = constrain(elapsed / transition34Duration, 0, 1);
     image(img3, 0, 0, width, height);
-    noTint();
+
+    if (t <= 0.5) {
+      let t1 = map(t, 0, 0.5, 0, 1, true);
+
+      let darkMode = map(t1, 0, 1, 0, 200, true);
+      fill(0, darkMode);
+      noStroke();
+      rect(0, 0, width, height);
+      let text1 = map(t1, 0, 1, 0, 255, true);
+      fill(255, text1);
+      textAlign(CENTER, CENTER);
+      textSize(40);
+      text(
+        "You decided not to take the experiment.\n100 years later, human extincted...",
+        width / 2,
+        height / 2
+      );
+    } else {
+      let t2 = map(t, 0.5, 1, 0, 1, true);
+      let text1 = map(t2, 0, 1, 255, 0, true);
+      fill(255, text1);
+      textAlign(CENTER, CENTER);
+      textSize(40);
+      text(
+        "You decided not to take the experiment.\n100 years later, human extincted...",
+        width / 2,
+        height / 2
+      );
+
+      let bg4Alpha = map(t2, 0, 1, 0, 255, true);
+      tint(255, bg4Alpha);
+      image(img4, 0, 0, width, height);
+      noTint();
+    }
+
+    if (t >= 1) {
+      transition34 = false;
+      currentBG = 4;
+    }
+    return;
   }
 
-  // 6. 转场结束：正式切到 BG3 并重置状态
-  if (t >= 1) {
-    transition23 = false;
-    currentBG = 3;
-    ghost.x = width * 3/4;
-    ghost.y = height / 2;
-    robot.x = width / 4;
-    robot.y = height / 2;
-    ghostVX = 0;
-    ghostVY = 0;
-    robotVX = 0;
-    robotVY = 0;
-  }
-  return;
-}
-
-
-  //在BG3中进行进行渐变效果，回到BG1或BG4; currentBG对应
+  //BG2,BG3,BG4
   if (currentBG === 3) {
     tint(tintColor);
     image(img3, 0, 0, width, height);
-    noTint();
-     if (sideIntensity !== 0) {
-    let steps = 80;  
-    if (sideIntensity > 0) {
-      for (let i = 0; i < steps; i++) {
-        let x = width / 2 + (i / steps) * (width / 2);
-        let wStep = (width / 2) / steps;
-        let a = map(i, 0, steps - 1, 0, 200 * sideIntensity, true);
-        fill(255, 255, 255, a);
-        noStroke();
-        rect(x, 0, wStep + 1, height);
-      }
-    } else {
-      for (let i = 0; i < steps; i++) {
-        let x = (i / steps) * (width / 2);
-        let wStep = (width / 2) / steps;
-        let a = map(steps - 1 - i, 0, steps - 1, 0, 200 * -sideIntensity, true);
-        fill(0, 0, 0, a);
-        noStroke();
-        rect(x, 0, wStep + 1, height);
-      }
+    let steps = 80;
+    let maxAlpha = 200;  
+
+  if (mouseX < width / 2) {
+    for (let i = 0; i < steps; i++) {
+      let x = width / 2 + (i / steps) * (width / 2);
+      let wStep = (width / 2) / steps;
+      let a = map(i, 0, steps - 1, 0, maxAlpha, true);
+      fill(0, 0, 0, a);
+      rect(x, 0, wStep + 1, height);
+    }
+  } else {
+    for (let i = 0; i < steps; i++) {
+      let x = (i / steps) * (width / 2);
+      let wStep = (width / 2) / steps;
+      let a = map(i, 0, steps - 1, 0, maxAlpha, true);
+      fill(0, 0, 0, a);
+      rect(x, 0, wStep + 1, height);
     }
   }
+
   } else if (currentBG === 2) {
-    tint(255, 255);
     image(img2, 0, 0, width, height);
   } else if (currentBG === 4) {
-    tint(255,255);
     image(img4,0,0,width,height);
     noTint();
     for (let i = 0; i < boats.length; i++) {
-    boats[i].update();
-    boats[i].draw();
-  }
-  } else {
-    tint(255, fade);
-    image(img1, 0, 0, width, height);
-    tint(255, 255 - fade);
-    image(img2, 0, 0, width, height);
-    if (setDistance < 100 && robotEverAngry === true) {
-      if (0 < fade && fade < 255) {
-        fade--;
-      }
+      boats[i].update();
+      boats[i].draw();
     }
+    if (robotBg && !robotBg.isPlaying()) {
+      robotBg.setVolume(0.15); 
+      robotBg.loop();
+    }
+  } else if (currentBG === 1) {
+    image(img1, 0, 0, width, height);
   }
 
-  //BG3: tint changed based on mouse movement direction in BG3
-  if(currentBG === 3){
+  //BG3 play music
+  if (currentBG === 3) {
     let angle = atan2(mouseY - pmouseY, mouseX - pmouseX);
-    let distance = dist(mouseX, mouseY, pmouseX, pmouseY);
-    let baseTint = 0.5;
+    let dx = mouseX - pmouseX;
+    let moveDist = dist(mouseX, mouseY, pmouseX, pmouseY);
+    let base = 0;
     sideIntensity *= 0.9;
 
-    if (distance > DISTANCE_THRESHOLD) {
-      let t = map(distance, DISTANCE_THRESHOLD, 50, 0, 1, true);
-      if (angle > radians(-45) && angle < radians(45)) {
-      finalTint = constrain(baseTint + t * 0.5, 0, 1);
-      sideIntensity = constrain(sideIntensity + 0.1 * t, -1, 1);
-    }
-      else if (angle > radians(135) || angle < radians(-135)) {
-       finalTint = constrain(baseTint - t * 0.5, 0, 1);
-      sideIntensity = constrain(sideIntensity - 0.1 * t, -1, 1);
-    }
-  } 
-  tintColor = lerpColor(leftColor, rightColor, finalTint);
+    if (moveDist > DISTANCE_THRESHOLD) {
+      let t = map(abs(dx), DISTANCE_THRESHOLD, 50, 0, 1, true);
 
- if (currentBG === 3) {
-  if (mouseX < width / 2) {
-    // 鼠标在左半屏：淡出 oppenheimer，开始 battle
-    if (!thebattleinthesnow.isPlaying()) {
-      fadeOutSound(oppenheimer, 800, () => {
-        thebattleinthesnow.setVolume(1.0);
-        thebattleinthesnow.play();
-      });
+    if (dx > 0) {
+      sideIntensity = constrain(base + t, -1, 1);
+    } else if (dx < 0) {
+      sideIntensity = constrain(base - t, -1, 1);
     }
-  } else {
-    // 鼠标在右半屏：淡出 battle，开始 oppenheimer
-    if (!oppenheimer.isPlaying()) {
-      fadeOutSound(thebattleinthesnow, 800, () => {
-        oppenheimer.setVolume(1.0);
-        oppenheimer.play();
-      });
     }
-  }
-}
-  fadeOutSound(thebattleinthesnow, 800);
-  fadeOutSound(oppenheimer, 800);
+    tintColor = lerpColor(leftColor, rightColor, finalTint);
+
+   
   }
 
-  //在BG2中，相互碰撞
-  if (testMode === true && currentBG === 2) {
-    if (mouseIsMoving === false) {
+  // BG2 testmode
+  if (testMode && currentBG === 2) {
+    if (!mouseIsMoving) {
       ghost.x += ghostVX;
       ghost.y += ghostVY;
       robot.x += robotVX;
@@ -493,14 +494,12 @@ if (transition23 === true) {
     } else {
       let targetX = mouseX;
       let targetY = mouseY;
-
       ghost.x += (targetX - ghost.x) * 0.005;
       ghost.y += (targetY - ghost.y) * 0.005;
-
       robot.x += (targetX - robot.x) * 0.005;
       robot.y += (targetY - robot.y) * 0.005;
     }
-    //防止浮动时，碰到border
+
     if (ghost.x < 40 || ghost.x > width - 40) {
       ghostVX *= -1;
     }
@@ -515,7 +514,7 @@ if (transition23 === true) {
     }
 
     let d = dist(ghost.x, ghost.y, robot.x, robot.y);
-    if (d < 120 && mouseIsMoving === false) {
+    if (d < 120 && !mouseIsMoving) {
       let tempVX = ghostVX;
       let tempVY = ghostVY;
       ghostVX = -robotVX;
@@ -523,51 +522,49 @@ if (transition23 === true) {
       robotVX = -tempVX;
       robotVY = -tempVY;
     }
-  } else if (testMode === false && currentBG === 1) {
+
+    //BG1
+  } else if (!testMode && currentBG === 1) {
     let floatOffset = sin(frameCount * 0.05) * 3;
     ghost.y += floatOffset;
     robot.y += floatOffset;
     ghost.y = constrain(ghost.y, 40, height - 40);
     robot.y = constrain(robot.y, 40, height - 40);
-  } else if (currentBG === 3) {
-    // BG3
   }
 
-  
   distance = dist(ghost.x, ghost.y, robot.x, robot.y);
   setDistance = distance;
   world.update(distance);
 
   if (currentBG === 1 || currentBG === 2) {
-  ghost.draw(world);
-  robot.draw(world);
+    ghost.draw(world);
+    robot.draw(world);
   }
 
   if (currentBG === 1 && distance < 200) {
     drawMusicNotes();
   }
 
-//text display
-if (showTextSound) {
-  let textDuration = millis() - textStartTime;
-  if (textDuration < 3000) {
+  if (currentBG === 1) {
     fill(255);
-    textAlign(CENTER, CENTER);
-    textSize(40);
-    text("Time... Time... Time...",
-         width / 2, height / 2);
-  } else {
-    showTextSound = false;
+    textAlign(LEFT, TOP);
+    textSize(32);
+    text("3025AD", 20, 20);
+  }
+
+  if (showTextSound) {
+    let textDuration = millis() - textStartTime;
+    if (textDuration < 3000) {
+      fill(255);
+      textAlign(CENTER, CENTER);
+      textSize(40);
+      text("Time... Time... Time...", width / 2, height / 2);
+    } else {
+      showTextSound = false;
+    }
   }
 }
 
-if (showTextBG1) {
-  fill(255);
-  textSize(40);
-  text("3025AD",
-      100,40);
-}
-}
 
 class Ghost {
   constructor(x, y) {
@@ -586,13 +583,12 @@ class Ghost {
     translate(this.x, this.y);
     noStroke();
 
-    if (world.isformed === true) {
+    if (world.isformed) {
       fill(this.alertColor);
     } else {
       fill(this.normalColor);
     }
 
-    
     let w = 220;
     let h = 260;
     let halfW = w / 2;
@@ -628,8 +624,6 @@ class Ghost {
   }
 }
 
-
-
 class Robot {
   constructor(x, y) {
     this.x = x;
@@ -645,7 +639,7 @@ class Robot {
     rectMode(CENTER);
     noStroke();
 
-    if (robotAngry === true) {
+    if (robotAngry) {
       fill(255, 120, 120);
     } else if (setDistance < 100) {
       fill(this.alertBody);
@@ -655,26 +649,21 @@ class Robot {
 
     rect(0, 0, 180, 210, 30);
 
-   
     fill(150);
     ellipse(-75, -20, 25, 60);
     ellipse(75, -20, 25, 60);
 
-   
     fill(220);
     rect(0, -40, 130, 50, 15);
 
-    
     fill(0);
     ellipse(-35, -40, 30, 30);
     ellipse(35, -40, 30, 30);
 
-    if (robotAngry === true) {
+    if (robotAngry) {
       fill(255, 50, 50);
       ellipse(-35, -40, 16, 16);
       ellipse(35, -40, 16, 16);
-    }
-    if (robotAngry === true) {
       stroke(0);
       strokeWeight(6);
       line(-55, -55, -20, -45); 
@@ -684,7 +673,7 @@ class Robot {
       ellipse(0, -120, 60, 80);
       fill(255, 220, 0, 220);
       ellipse(0, -115, 40, 60);
-    } else if (robotHappy === true) {
+    } else if (robotHappy) {
       fill(137, 207, 140);
       stroke(0);
       strokeWeight(4);
@@ -710,8 +699,6 @@ class Robot {
   }
 }
 
-
-
 class World{
   constructor(){
     this.isformed = false;
@@ -726,39 +713,40 @@ class World{
 }
 
 function mousePressed() {
-  if (currentBG === 3) {
+  //BG4 
+  if (currentBG === 3 && !transition34) {
     ghost.x = width * 3/4;
     ghost.y = height / 2;
     robot.x = width / 4;
     robot.y = height / 2;
 
-  if (thebattleinthesnow.isPlaying()) {
-      thebattleinthesnow.stop();
-    }
-  if (fusion.isPlaying()) {
-    fusion.stop();
-  }
-  
-  if (mouseX < width / 2) {
+    if (mouseX < width / 2) {
       currentBG = 1;
       testMode = false;
-      fade = 255;
-    } else {
-      currentBG = 4;
-      testMode = false;
-       fadeOutSound(thebattleinthesnow, 800);
-  fadeOutSound(oppenheimer, 800, () => {
-    if (!meetingkitty.isPlaying()) {
-      meetingkitty.setVolume(1.0);
-      meetingkitty.play();
+      robotAngry = false;
+      robotHappy = false;
+      if (thebattleinthesnow.isPlaying()) thebattleinthesnow.stop();
+      if (oppenheimer.isPlaying()) oppenheimer.stop();
+      if (fusion.isPlaying()) fusion.stop();
+      return;
     }
-  });
+
+    transition34 = true;
+    transition34StartTime = millis();
+    fadeOutSound(thebattleinthesnow, 800);
+    fadeOutSound(oppenheimer, 800, () => {
+      if (!meetingkitty.isPlaying()) {
+        meetingkitty.setVolume(1.0);
+        meetingkitty.play();
+      }
+    });
+    return;
   }
-  }
+
   if (currentBG === 1 &&
       mouseX < width * 0.40 && mouseX > width * 0.3 &&
       mouseY < height * 0.7 && mouseY > height * 0.6 &&
-      testMode === false && robotEverAngry === true) {
+      !testMode && robotEverAngry) {
 
     testMode = true;
     testStartTime = millis();
@@ -776,7 +764,7 @@ function mousePressed() {
       quantummechanics.pause();
       musicPlaying = false;
     }
-  return
+    return;
   }
 }
 
@@ -785,26 +773,22 @@ class Boat {
     this.x = x;
     this.y = y;
     this.vx = vx;
-    this.index = index; // 用于选择不同颜色标志
+    this.index = index;
   }
 
   update() {
-    // 水平移动
     this.x += this.vx;
     if (this.x > width + 80) {
       this.x = -80;
     }
-
-    // 轻微上下浮动（根据全局 frameCount）
     this.currentY = this.y + sin(frameCount * 0.02) * 5;
   }
 
   draw() {
-    // 每艘船的颜色标志
     let markColors = [
-      color(0, 200, 255),   // 青蓝
-      color(255, 120, 0),   // 橙色
-      color(120, 255, 120)  // 绿色
+      color(0, 200, 255),
+      color(255, 120, 0),
+      color(120, 255, 120)
     ];
     let c = markColors[this.index % markColors.length];
 
@@ -812,31 +796,25 @@ class Boat {
     translate(this.x, this.currentY);
     noStroke();
 
-    // 船身：银灰色主体
-    fill(190); // 银灰色
-    ellipse(0, 0, 90, 26);      // 主体椭圆
+    fill(190);
+    ellipse(0, 0, 90, 26);
 
-    // 上方舱体
     fill(210);
     rect(0, -8, 40, 14, 6);
 
-    // 金属高光
     fill(230, 230, 230, 180);
     ellipse(-20, -2, 16, 6);
     ellipse(25, 2, 18, 6);
 
-    // 舷窗
     fill(40);
     ellipse(-10, -4, 6, 6);
     ellipse(0, -4, 6, 6);
     ellipse(10, -4, 6, 6);
 
-    // 底部推进器
     fill(150);
     rect(-35, 3, 10, 10, 3);
     rect(35, 3, 10, 10, 3);
 
-    // 颜色标志：发光圆环
     fill(c);
     ellipse(0, 5, 14, 14);
     fill(255, 255, 255, 180);
@@ -848,7 +826,7 @@ class Boat {
 
 function drawMusicNotes() {
   push();
-  translate(width / 2, height / 2); // 画布中间为中心
+  translate(width / 2, height / 2);
   noFill();
   stroke(255);
   strokeWeight(4);
@@ -856,12 +834,14 @@ function drawMusicNotes() {
   line(-20, 20, -20, -40);
   fill(255);
   ellipse(-10, 25, 20, 16);
+
   noFill();
   stroke(255);
   strokeWeight(4);
   line(20, 0, 20, -50);
   fill(255);
   ellipse(30, 5, 18, 14);
+
   noFill();
   stroke(255);
   strokeWeight(3);
@@ -870,17 +850,14 @@ function drawMusicNotes() {
 }
 
 function mouseOnMusicNotes() {
-  // 这里假设音符整体是以 (width/2, height/2) 为中心的矩形区域
   let cx = width / 2;
   let cy = height / 2;
-  let w = 120; // 区域宽
-  let h = 120; // 区域高
-
+  let w = 120;
+  let h = 120;
   return (mouseX > cx - w/2 && mouseX < cx + w/2 &&
           mouseY > cy - h/2 && mouseY < cy + h/2);
 }
 
-// this part was generated by AI;让一个声音在 duration 毫秒内从当前音量淡出到 0，然后调用回调函数（可选）
 function fadeOutSound(snd, duration, onDone) {
   if (!snd || !snd.isPlaying()) {
     if (onDone) onDone();
@@ -888,7 +865,7 @@ function fadeOutSound(snd, duration, onDone) {
   }
 
   let startTime = millis();
-  let startVol = snd.getVolume ? snd.getVolume() : 1.0; // 如果没设过音量，则认为是 1
+  let startVol = snd.getVolume ? snd.getVolume() : 1.0;
 
   function step() {
     let t = (millis() - startTime) / duration;
@@ -904,4 +881,23 @@ function fadeOutSound(snd, duration, onDone) {
   }
 
   step();
+}
+
+function getTookPhrase(n) {
+  let words = [];
+  for (let i = 1; i <= n; i++) {
+    let w;
+    if (i === 1)      w = "one";
+    else if (i === 2) w = "two";
+    else if (i === 3) w = "three";
+    else if (i === 4) w = "four";
+    else if (i === 5) w = "five";
+    else if (i === 6) w = "six";
+    else if (i === 7) w = "seven";
+    else if (i === 8) w = "eight";
+    else if (i === 9) w = "nine";
+    else              w = String(i); // 超过9就直接用数字，理论上可以到无穷大
+    words.push("took " + w);
+  }
+  return words.join(" ");
 }
