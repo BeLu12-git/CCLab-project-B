@@ -217,12 +217,12 @@ function draw() {
   textAlign(CENTER, CENTER);
   textSize(40);
 
-  let nth = experimentCount + 1;  
+  let counts = experimentCount + 1;  
   let tookWord;
-  if (nth === 1)      tookWord = "one";
-  else if (nth === 2) tookWord = "two";
-  else if (nth === 3) tookWord = "three";
-  else                tookWord = String(nth);
+  if (counts === 1)      tookWord = "one";
+  else if (counts === 2) tookWord = "two";
+  else if (counts === 3) tookWord = "three";
+  else                tookWord = String(counts);
 
   text(
           "500 years ago...\nRobot Mind Experiment took " + 
@@ -232,7 +232,6 @@ function draw() {
     );
 
   } else {
-      // 后 5 秒：文字淡出 + BG2 渐亮
     let t2 = map(t, 0.5, 1, 0, 1, true);
 
     let text1 = map(t2, 0, 1, 255, 0, true);
@@ -240,12 +239,12 @@ function draw() {
     textAlign(CENTER, CENTER);
     textSize(40);
 
-  let nth = experimentCount + 1;  
+  let counts = experimentCount + 1;  
   let tookWord;
-  if (nth === 1)      tookWord = "one";
-  else if (nth === 2) tookWord = "two";
-  else if (nth === 3) tookWord = "three";
-  else                tookWord = String(nth);
+  if (counts === 1)      tookWord = "one";
+  else if (counts === 2) tookWord = "two";
+  else if (counts === 3) tookWord = "three";
+  else                tookWord = String(counts);
 
 text(
   "500 years ago...\nRobot Mind Experiment took " + tookWord + "...\nBut failed....",
@@ -301,7 +300,7 @@ text(
   }
 
  //BG2 transition to BG3
-  if (testMode && currentBG === 2 && setDistance < 40 && !transition23) {
+  if (testMode && currentBG === 2 && setDistance < 40 && transition23 === false) {
     testMode = false;              
     robotAngry = false;
     transition23 = true;              
@@ -311,8 +310,8 @@ text(
 
 
   if (transition23) {
-    let elapsed = millis() - transition23StartTime;
-    let t = constrain(elapsed / transition23Duration, 0, 1);
+    let time23 = millis() - transition23StartTime;
+    let t = constrain(time23 / transition23Duration, 0, 1);
     image(img2, 0, 0, width, height);
 
     //fire
@@ -375,8 +374,8 @@ text(
 
   // BG3 transition to BG4
   if (transition34) {
-    let elapsed = millis() - transition34StartTime;
-    let t = constrain(elapsed / transition34Duration, 0, 1);
+    let time34 = millis() - transition34StartTime;
+    let t = constrain(time34 / transition34Duration, 0, 1);
     image(img3, 0, 0, width, height);
 
     if (t <= 0.5) {
