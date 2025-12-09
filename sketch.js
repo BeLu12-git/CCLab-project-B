@@ -159,7 +159,7 @@ function draw() {
     robot.y = constrain(robot.y, 40, height - 40);
   }
 
-  //angry & happy mode
+  //angry & happy mode; text display; use robot ever happy to go to BG2
   if (!testMode && currentBG === 1 
       && ghost.y > height * 0.2 && ghost.y < height * 0.3 
       && ghost.x > width * 0.7 && ghost.x < width * 0.8) {
@@ -200,7 +200,7 @@ function draw() {
     }
   }
 
-  //BG1 transition to BG2
+  //BG1 transition to BG2; experiment take 1 take 2 etc.
   if (transition12) {
     let time12 = millis() - transition12StartTime;
     let t = constrain(time12 / transition12Duration, 0, 1);
@@ -244,7 +244,7 @@ function draw() {
   if (counts === 1)      tookWord = "one";
   else if (counts === 2) tookWord = "two";
   else if (counts === 3) tookWord = "three";
-  else                tookWord = String(counts);
+  else                   tookWord = String(counts);
 
 text(
   "500 years ago...\nRobot Mind Experiment took " + tookWord + "...\nBut failed....",
@@ -252,7 +252,7 @@ text(
   height / 2
 );
 
-
+  //bg2 robot & ghost experiment
   let bg2Alpha = map(t2, 0, 1, 0, 255, true);
   tint(255, bg2Alpha);
   image(img2, 0, 0, width, height);
@@ -419,26 +419,28 @@ text(
     return;
   }
 
-  //BG2,BG3,BG4
-  if (currentBG === 3) {
-    tint(tintColor);
-    image(img3, 0, 0, width, height);
-    let steps = 80;
-    let maxAlpha = 200;  
-
+  //BG1,BG2,BG3,BG4; BG3 sade for choice
+ if (currentBG === 3) {
+  image(img3, 0, 0, width, height);
+  let steps = 80;
+  let maxAlpha = 240;
+  noStroke();
   if (mouseX < width / 2) {
     for (let i = 0; i < steps; i++) {
-      let x = width / 2 + (i / steps) * (width / 2);
+      let norm = i / (steps - 1);         
+      let x = width / 2 + norm * (width/2);
       let wStep = (width / 2) / steps;
-      let a = map(i, 0, steps - 1, 0, maxAlpha, true);
+      let a = map(norm, 0, 1, 0, maxAlpha, true);
       fill(0, 0, 0, a);
       rect(x, 0, wStep + 1, height);
     }
+
   } else {
     for (let i = 0; i < steps; i++) {
-      let x = (i / steps) * (width / 2);
+      let norm = i / (steps - 1);         
+      let x = width / 2 - norm * (width/2) - (width/2)/steps;
       let wStep = (width / 2) / steps;
-      let a = map(i, 0, steps - 1, 0, maxAlpha, true);
+      let a = map(norm, 0, 1, 0, maxAlpha, true);
       fill(0, 0, 0, a);
       rect(x, 0, wStep + 1, height);
     }
@@ -461,9 +463,8 @@ text(
     image(img1, 0, 0, width, height);
   }
 
-  //BG3 play music
+  //BG3 detct mouse motion
   if (currentBG === 3) {
-    let angle = atan2(mouseY - pmouseY, mouseX - pmouseX);
     let dx = mouseX - pmouseX;
     let moveDist = dist(mouseX, mouseY, pmouseX, pmouseY);
     let base = 0;
@@ -895,7 +896,7 @@ function getTookPhrase(n) {
     else if (i === 7) w = "seven";
     else if (i === 8) w = "eight";
     else if (i === 9) w = "nine";
-    else              w = String(i); // 超过9就直接用数字，理论上可以到无穷大
+    else              w = String(i); 
     words.push("took " + w);
   }
   return words.join(" ");
